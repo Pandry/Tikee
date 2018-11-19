@@ -13,7 +13,10 @@ The program is written in WPF, here are some screenshots:
 ### During coutdown
 ![During countdown](https://vgy.me/5k8zVy.png)
 
+### Idle timer (your idle time)
+![Idle time](https://vgy.me/4cxkSY.png)
 As you can see the UI is pretty minimalistic.
+
 
 The program looks at the mouse movement every second and compare the position with the last knew.
 If the position remains the same for more time than the treshold time (15 minutes), when the user comes back, the timer starts anew.
