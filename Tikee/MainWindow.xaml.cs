@@ -21,7 +21,7 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.IO;
 
-namespace WpfApp2
+namespace Tikee
 {
     /// <summary>
     /// Interaction logic for MainWindow.xaml
