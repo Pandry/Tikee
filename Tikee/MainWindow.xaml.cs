@@ -79,7 +79,19 @@ namespace Tikee
         private void mainTimer_Tick(object sender, EventArgs e)
         {
             CurrentTimespan -= new TimeSpan(0, 0, 1);
-            ClockTxt.Text = CurrentTimespan.ToString(@"hh\:mm\:ss");
+            if (IsIdle)
+            {
+                this.Topmost = true;
+                this.Activate();
+                this.BringIntoView();
+                this.Focus();
+                this.Topmost = false;
+                ClockTxt.Text = CurrentMouseIdleTime.ToString(@"hh\:mm\:ss");
+            }
+            else
+            {
+                ClockTxt.Text = CurrentTimespan.ToString(@"hh\:mm\:ss");
+            }
             var newMousePosition = GetMousePosition();
             if (LatestMousePosition == newMousePosition)
             {
