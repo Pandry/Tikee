@@ -29,10 +29,11 @@ namespace WpfApp2
     public partial class MainWindow : Window
     {
         //Colors from https://flatuicolors.com/palette/de
-        SolidColorBrush GreenBackground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#26de81"));
-        SolidColorBrush BlueBackground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#3867d6")); //Blue when user is in pause
-        SolidColorBrush RedBackground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#ff4757"));
-        SolidColorBrush OrangeBackground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#fa8231"));
+        SolidColorBrush GreenBackground = new SolidColorBrush((Color) ColorConverter.ConvertFromString("#26de81"));
+        SolidColorBrush BlueBackground = new SolidColorBrush((Color) ColorConverter.ConvertFromString("#3867d6")); //Blue when user is in pause
+        SolidColorBrush RedBackground = new SolidColorBrush((Color) ColorConverter.ConvertFromString("#ff4757"));
+        SolidColorBrush OrangeBackground = new SolidColorBrush((Color) ColorConverter.ConvertFromString("#fa8231"));
+        SolidColorBrush GreyBackground = new SolidColorBrush((Color) ColorConverter.ConvertFromString("#4b6584"));
 
         const string defaultTimeString = "01:00:00";
         const string defaultPauseString = "00:15:00";
@@ -42,6 +43,7 @@ namespace WpfApp2
         int[] backgroundPopup = new int[] {5};
 
         #region Get Cursor Posion func
+
         [DllImport("user32.dll")]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static extern bool GetCursorPos(ref Win32Point pt);
@@ -52,12 +54,14 @@ namespace WpfApp2
             public Int32 X;
             public Int32 Y;
         };
+
         public static Point GetMousePosition()
         {
             Win32Point w32Mouse = new Win32Point();
             GetCursorPos(ref w32Mouse);
             return new Point(w32Mouse.X, w32Mouse.Y);
         }
+
         #endregion
 
         private Point LatestMousePosition;
@@ -68,18 +72,18 @@ namespace WpfApp2
         private TimeSpan CurrentTimespan;
         private TimeSpan SettedTimespan;
 
-        private TimeSpan CurrentMouseIdleTime = new TimeSpan(0,0,0);
+        private TimeSpan CurrentMouseIdleTime = new TimeSpan(0, 0, 0);
         private bool IsIdle = false;
-        
+
 
         private void mainTimer_Tick(object sender, EventArgs e)
         {
             CurrentTimespan -= new TimeSpan(0, 0, 1);
             ClockTxt.Text = CurrentTimespan.ToString(@"hh\:mm\:ss");
             var newMousePosition = GetMousePosition();
-            if (LatestMousePosition== newMousePosition)
+            if (LatestMousePosition == newMousePosition)
             {
-                CurrentMouseIdleTime += new TimeSpan(0,0,1);
+                CurrentMouseIdleTime += new TimeSpan(0, 0, 1);
             }
             else
             {
@@ -104,7 +108,8 @@ namespace WpfApp2
 
             if (!IsIdle && CurrentTimespan.TotalSeconds <= 0)
             {
-                if (CurrentTimespan.TotalSeconds == 0  || backgroundPopup.Any(x => CurrentTimespan.TotalSeconds % x == 0))
+                if (CurrentTimespan.TotalSeconds == 0 ||
+                    backgroundPopup.Any(x => CurrentTimespan.TotalSeconds % x == 0))
                 {
                     this.Topmost = true;
                     this.Activate();
@@ -125,13 +130,13 @@ namespace WpfApp2
             HomeWindow.Background = GreenBackground;
             MainBtn.Content = "START";
             mainTimer.Tick += new EventHandler(mainTimer_Tick);
-
+            HomeWindow.Background = GreyBackground;
             LatestMousePosition = GetMousePosition();
 
             ClockTxt.Text = defaultTimeString;
         }
 
-       
+
 
 
 
@@ -157,7 +162,7 @@ namespace WpfApp2
                 ClockTxt.Text = defaultTimeString;
                 MainBtn.Content = "START";
                 ClockTxt.IsReadOnly = false;
-                HomeWindow.Background = OrangeBackground;
+                HomeWindow.Background = GreyBackground;
             }
             else
             {
@@ -200,7 +205,7 @@ namespace WpfApp2
 
 
                 ClockTxt.IsReadOnly = true;
-                MainBtn.Content = "STOP";
+                MainBtn.Content = "RESET";
                 HomeWindow.Background = GreenBackground;
 
                 //MessageBox.Show("YA BETTER SHTAP!");
@@ -214,6 +219,12 @@ namespace WpfApp2
             this.BringIntoView();
             this.Focus();
             this.Topmost = false;
+        }
+
+        private void OnMinimizeBtnClick(object sender, RoutedEventArgs e)
+        {
+            this.WindowState = WindowState.Minimized;
+            
         }
     }
 }
