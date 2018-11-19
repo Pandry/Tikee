@@ -12,6 +12,7 @@
         WindowStartupLocation="CenterScreen"
         ResizeMode="NoResize"
         MouseDown="Window_MouseDown"
+        Loaded="MainWindow_OnLoaded"
         Name="HomeWindow">
     <Window.Resources>
         
