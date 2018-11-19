@@ -31,7 +31,7 @@ namespace WpfApp2
         SolidColorBrush OrangeBackground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#fa8231"));
 
         string defaultTimeString = "01:00:00";
-        int[] backgroundPopup = new int[] {1,5};
+        int[] backgroundPopup = new int[] {5};
         
         
         //Main timer Init
@@ -43,9 +43,9 @@ namespace WpfApp2
         {
             CurrestTimespan -= new TimeSpan(0, 0, 1);
             ClockTxt.Text = CurrestTimespan.ToString(@"hh\:mm\:ss");
-            if (CurrestTimespan.TotalSeconds < 0)
+            if (CurrestTimespan.TotalSeconds <= 0)
             {
-                if (backgroundPopup.Any(x => CurrestTimespan.TotalSeconds % x == 0))
+                if (CurrestTimespan.TotalSeconds == 0  || backgroundPopup.Any(x => CurrestTimespan.TotalSeconds % x == 0))
                 {
                     this.Activate();
                 }
@@ -87,6 +87,7 @@ namespace WpfApp2
                 mainTimer.Stop();
                 ClockTxt.Text = defaultTimeString;
                 MainBtn.Content = "START";
+                ClockTxt.IsReadOnly = false;
                 HomeWindow.Background = OrangeBackground;
             }
             else
@@ -128,7 +129,7 @@ namespace WpfApp2
                 mainTimer.Start();
 
 
-
+                ClockTxt.IsReadOnly = true;
                 MainBtn.Content = "STOP";
                 HomeWindow.Background = GreenBackground;
 
