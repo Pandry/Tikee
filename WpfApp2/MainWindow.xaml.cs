@@ -47,7 +47,11 @@ namespace WpfApp2
             {
                 if (CurrestTimespan.TotalSeconds == 0  || backgroundPopup.Any(x => CurrestTimespan.TotalSeconds % x == 0))
                 {
+                    this.Topmost = true;
                     this.Activate();
+                    this.BringIntoView();
+                    this.Focus();
+                    this.Topmost = false;
                 }
                 HomeWindow.Background = RedBackground;
             }
