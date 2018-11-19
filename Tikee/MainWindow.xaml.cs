@@ -37,8 +37,10 @@ namespace Tikee
 
         const string defaultTimeString = "01:00:00";
         const string defaultPauseString = "00:15:00";
+        const string idleDisplayTresholdString = "00:00:10";
 
         TimeSpan defaultPauseTimeSpan = TimeSpan.Parse(defaultPauseString);
+        TimeSpan idleDisplayTresholdTimeSpan = TimeSpan.Parse(idleDisplayTresholdString);
 
         int[] backgroundPopup = new int[] {5};
 
@@ -79,17 +81,30 @@ namespace Tikee
         private void mainTimer_Tick(object sender, EventArgs e)
         {
             CurrentTimespan -= new TimeSpan(0, 0, 1);
-            if (IsIdle)
+            //Determine if is idle
+            if (CurrentMouseIdleTime > defaultPauseTimeSpan)
             {
-                this.Topmost = true;
-                this.Activate();
-                this.BringIntoView();
-                this.Focus();
-                this.Topmost = false;
+                //It seems like that's a pause
+                IsIdle = true;
+                HomeWindow.Background = BlueBackground;
+            }
+            if (IsIdle || CurrentMouseIdleTime > idleDisplayTresholdTimeSpan)
+            {
+                if (IsIdle)
+                {
+                    //If is idle 
+                    this.Topmost = true;
+                    this.Activate();
+                    this.BringIntoView();
+                    this.Focus();
+                    this.Topmost = false;
+                }
+                HomeWindow.Background = BlueBackground;
                 ClockTxt.Text = CurrentMouseIdleTime.ToString(@"hh\:mm\:ss");
             }
             else
             {
+                HomeWindow.Background = GreenBackground;
                 ClockTxt.Text = CurrentTimespan.ToString(@"hh\:mm\:ss");
             }
             var newMousePosition = GetMousePosition();
@@ -110,14 +125,6 @@ namespace Tikee
                 }
                 IsIdle = false;
             }
-
-            if (CurrentMouseIdleTime > defaultPauseTimeSpan)
-            {
-                //It seems like that's a pause
-                IsIdle = true;
-                HomeWindow.Background = BlueBackground;
-            }
-
             if (!IsIdle && CurrentTimespan.TotalSeconds <= 0)
             {
                 if (CurrentTimespan.TotalSeconds == 0 ||
