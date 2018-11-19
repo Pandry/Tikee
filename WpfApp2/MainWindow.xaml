@@ -11,7 +11,9 @@
         WindowState="Minimized"
         WindowStartupLocation="CenterScreen"
         ResizeMode="NoResize"
-        MouseDown="Window_MouseDown">
+        MouseDown="Window_MouseDown"
+        Name="HomeWindow"
+        Loaded="MainWindow_OnLoaded">
     <Window.Resources>
         <Style TargetType="Button" x:Key="MainButton">
             <Setter Property="Background" Value="Transparent" />
@@ -40,22 +42,20 @@
             </Setter>
         </Style>
     </Window.Resources>
-    <Grid>
+    <Grid Name="MainGrid">
         <TextBox HorizontalAlignment="Center" Margin="0,-100,0,0" TextWrapping="NoWrap" Text="00:00:00" VerticalAlignment="Center" Width="350"
                  Background="Transparent" TextAlignment="Center" VerticalContentAlignment="Top" MaxLength="8" FontSize="90" FontWeight="Medium" Foreground="#eee" 
-                 BorderThickness="0" />
+                 BorderThickness="0" Name="ClockTxt"/>
         
-        <Label Visibility="Hidden" Name="CounterLbl" Content="00:00:00" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="80px" FontWeight="Medium" Foreground="#eee" Margin="0,-50,0,0"/>
-        
-        <Button Name="StopBtn" Style="{StaticResource MainButton}"  Content="STOP" HorizontalAlignment="Center" Margin="0,100,0,0" VerticalAlignment="Center" 
+        <Button Name="MainBtn" Style="{StaticResource MainButton}"  Content="STOP" HorizontalAlignment="Center" Margin="0,100,0,0" VerticalAlignment="Center" 
                 Width="112" Background="Transparent" Foreground="#eee" BorderThickness="3px" Height="37"
-                FontWeight="Medium" FontSize="18px" Click="OnStopBtnClick" />
+                FontWeight="Medium" FontSize="18px" Click="OnMainBtnClick" />
         <Button Name="CloseBtn" Style="{StaticResource CloseButton}" Content="X" 
                 HorizontalAlignment="Right" VerticalAlignment="Top" Width="40" Height="40" BorderBrush="Transparent" 
                 Foreground="#eee" FontWeight="Bold" FontSize="30px" Click="OnCloseBtnClick" Background="Transparent"/>
         
         
-
+        
 
 
     </Grid>
