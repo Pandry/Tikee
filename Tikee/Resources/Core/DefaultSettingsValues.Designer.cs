@@ -99,7 +99,7 @@ namespace Tikee.Resources.Core {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to 00:00:01.
+        ///   Looks up a localized string similar to 00:00:10.
         /// </summary>
         internal static string DefaultPauseString {
             get {

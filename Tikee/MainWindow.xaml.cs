@@ -43,27 +43,14 @@ namespace Tikee
 
         readonly ResourceManager[] configResourcesArray  = { DefaultUIValues.ResourceManager, DefaultSettingsValues.ResourceManager };
 
-
-
-        //Colors from https://flatuicolors.com/palette/de
-        SolidColorBrush timerRunningBackground = new SolidColorBrush((Color) ColorConverter.ConvertFromString(DefaultUIValues.TimerRunningBackground));
-        SolidColorBrush idleBackground = new SolidColorBrush((Color) ColorConverter.ConvertFromString(DefaultUIValues.IdleBackground)); //Blue when user is in pause
-        SolidColorBrush timeOverBackground = new SolidColorBrush((Color) ColorConverter.ConvertFromString(DefaultUIValues.TimeOverBackground));
-        SolidColorBrush defaultBackground = new SolidColorBrush((Color) ColorConverter.ConvertFromString(DefaultUIValues.DefaultBackground));
-
-        string defaultTimeString = DefaultSettingsValues.DefaultTimeString;
-        string defaultPauseString = DefaultSettingsValues.DefaultPauseString;
-        string idleDisplayTresholdString = DefaultSettingsValues.IdleDisplayTresholdString;
-
-        private readonly string defaultConfigFileLocation = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), DefaultSettingsValues.ConfigFileName);
-
+       
 
         TimeSpan defaultPauseTimeSpan = TimeSpan.Parse(DefaultSettingsValues.DefaultPauseString);
         TimeSpan idleDisplayTresholdTimeSpan = TimeSpan.Parse(DefaultSettingsValues.IdleDisplayTresholdString);
 
         int[] backgroundPopup = new int[] {5};
 
-        private bool addictionMode = true;
+        private bool addictionMode = false;
 
 
         #region Get Cursor Posion func
@@ -100,7 +87,9 @@ namespace Tikee
         private bool isIdle = false;
         #region Configuration reading/settting/getting
         public string getConfigValue(string configKey)
+
         {
+            configKey = configKey.ToLower();
             if (mainConfigArray[configKey] != null)
             {
                 return mainConfigArray[configKey];
@@ -115,14 +104,14 @@ namespace Tikee
         private void readDefaultConfig()
         {
             foreach (var rm in configResourcesArray)
-            foreach (DictionaryEntry v in rm.GetResourceSet(CultureInfo.InvariantCulture, false, false))
-                defaultConfigArray[(string)v.Key] = rm.GetString((string)v.Value);
+                foreach (DictionaryEntry v in rm.GetResourceSet(CultureInfo.InvariantCulture, false, false))
+                    defaultConfigArray[(string)v.Key] = (string)v.Value;
         }
 
         private void readConfig(string configPath = null, bool defaultFallback = false)
         {
             if (defaultFallback || configPath == null)
-                configPath = defaultConfigFileLocation;
+                configPath = getConfigValue("defaultConfigFileLocation");
 
 
             if (defaultFallback)
@@ -130,7 +119,7 @@ namespace Tikee
                 //Load UI values
                 foreach (var rm in configResourcesArray)
                     foreach (DictionaryEntry v in rm.GetResourceSet(CultureInfo.InvariantCulture, false, false))
-                        mainConfigArray[(string)v.Key] = rm.GetString((string)v.Value);
+                        mainConfigArray[(string)v.Key] = (string)v.Value;
             }
             else if (File.Exists(configPath))
             {
@@ -217,6 +206,12 @@ namespace Tikee
 
 #endregion
 
+        private Brush hexToBrush(string color)
+        {
+            var c = (Color) ColorConverter.ConvertFromString(color);
+            return new SolidColorBrush(c);
+        }
+
         //TODO use windows native API to see idle time and/or last input
         //https://docs.microsoft.com/en-us/windows/desktop/api/winuser/nf-winuser-getlastinputinfo
         //
@@ -229,7 +224,7 @@ namespace Tikee
             {
                 //It seems like that's a pause
                 isIdle = true;
-                HomeWindow.Background = idleBackground;
+                HomeWindow.Background = hexToBrush(getConfigValue("idleBackground"));
             }
             if (isIdle || currentMouseIdleTime > idleDisplayTresholdTimeSpan)
             {
@@ -243,14 +238,23 @@ namespace Tikee
                     this.Focus();
                     this.Topmost = false;
                 }
-                HomeWindow.Background = idleBackground;
-                //ClockTxt.Text = currentMouseIdleTime.ToString(@"hh\:mm\:ss");
-                ClockTxt.Text = (defaultPauseTimeSpan - currentMouseIdleTime).ToString(@"hh\:mm\:ss");
+                if (defaultPauseTimeSpan >= currentMouseIdleTime)
+                {
+                    HomeWindow.Background = hexToBrush(getConfigValue("idleBackground"));
+                    //ClockTxt.Text = currentMouseIdleTime.ToString(@"hh\:mm\:ss");
+                    ClockTxt.Text = (defaultPauseTimeSpan - currentMouseIdleTime).ToString(@"hh\:mm\:ss");
+                }
+                else
+                {
+                    HomeWindow.Background = hexToBrush(getConfigValue("PauseOverBackground"));
+                    //ClockTxt.Text = currentMouseIdleTime.ToString(@"hh\:mm\:ss");
+                    ClockTxt.Text = (defaultPauseTimeSpan - currentMouseIdleTime).ToString(@"hh\:mm\:ss");
+                }
             }
             else
             {
                 //The timer is running normally
-                HomeWindow.Background = timerRunningBackground;
+                HomeWindow.Background = hexToBrush(getConfigValue("timerRunningBackground"));
                 ClockTxt.Text = currentTimespan.ToString(@"hh\:mm\:ss");
             }
             var newMousePosition = GetMousePosition();
@@ -267,7 +271,7 @@ namespace Tikee
                     //user is back, was in idle
                     //Restart timer
                     currentTimespan = settedTimespan;
-                    HomeWindow.Background = timerRunningBackground;
+                    HomeWindow.Background = hexToBrush(getConfigValue("timerRunningBackground"));
 
                     if (addictionMode)
                     {
@@ -297,26 +301,28 @@ namespace Tikee
                     }
                     this.Topmost = false;
                 }
-                if (HomeWindow.Background != idleBackground)
-                    HomeWindow.Background = timeOverBackground;
+                if (HomeWindow.Background != hexToBrush(getConfigValue("idleBackground")));
+                    HomeWindow.Background = hexToBrush(getConfigValue("timeOverBackground"));
             }
         }
 
         
         public MainWindow()
         {
-
-            InitializeComponent();
-            HomeWindow.Background = timerRunningBackground;
-            MainBtn.Content = "START";
-            mainTimer.Tick += new EventHandler(mainTimer_Tick);
-            HomeWindow.Background = defaultBackground;
-            latestMousePosition = GetMousePosition();
-
-            ClockTxt.Text = defaultTimeString;
-
             readDefaultConfig();
             readConfig(null, true);
+
+            InitializeComponent();
+            HomeWindow.Background = hexToBrush(getConfigValue("timerRunningBackground"));
+            MainBtn.Content = "START";
+            mainTimer.Tick += new EventHandler(mainTimer_Tick);
+            HomeWindow.Background = hexToBrush(getConfigValue("defaultBackground"));
+            latestMousePosition = GetMousePosition();
+
+            ClockTxt.Text = getConfigValue("defaultTimeString");
+
+
+
         }
         
         private void Window_MouseDown(object sender, MouseButtonEventArgs e)
@@ -339,10 +345,10 @@ namespace Tikee
                 setAddictedMode(false);
                 MainBtn.Visibility = Visibility.Visible;
                 mainTimer.Stop();
-                ClockTxt.Text = defaultTimeString;
+                ClockTxt.Text = getConfigValue("defaultTimeString");
                 MainBtn.Content = "START";
                 ClockTxt.IsReadOnly = false;
-                HomeWindow.Background = defaultBackground;
+                HomeWindow.Background = hexToBrush(getConfigValue("defaultBackground"));
             }
             else
             {
@@ -354,14 +360,14 @@ namespace Tikee
                 catch (ArgumentNullException)
                 {
                     MessageBox.Show("String empty! Blah blah");
-                    ClockTxt.Text = defaultTimeString;
+                    ClockTxt.Text = getConfigValue("defaultTimeString");
                     return;
                 }
                 catch (FormatException)
                 {
                     MessageBox.Show("The format isn't fine! Blah blah");
 
-                    ClockTxt.Text = defaultTimeString;
+                    ClockTxt.Text = getConfigValue("defaultTimeString");
                     return;
                 }
                 catch (Exception)
@@ -386,7 +392,7 @@ namespace Tikee
 
                 ClockTxt.IsReadOnly = true;
                 MainBtn.Content = "RESET";
-                HomeWindow.Background = timerRunningBackground;
+                HomeWindow.Background = hexToBrush(getConfigValue("timerRunningBackground"));
 
                 //MessageBox.Show("YA BETTER SHTAP!");
             }
