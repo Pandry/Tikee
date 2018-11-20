@@ -22,7 +22,7 @@ namespace Tikee.Resources.UI {
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "15.0.0.0")]
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
-    internal class DefaultUIValues {
+    public class DefaultUIValues {
         
         private static global::System.Resources.ResourceManager resourceMan;
         
@@ -36,7 +36,7 @@ namespace Tikee.Resources.UI {
         ///   Returns the cached ResourceManager instance used by this class.
         /// </summary>
         [global::System.ComponentModel.EditorBrowsableAttribute(global::System.ComponentModel.EditorBrowsableState.Advanced)]
-        internal static global::System.Resources.ResourceManager ResourceManager {
+        public static global::System.Resources.ResourceManager ResourceManager {
             get {
                 if (object.ReferenceEquals(resourceMan, null)) {
                     global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("Tikee.Resources.UI.DefaultUIValues", typeof(DefaultUIValues).Assembly);
@@ -51,7 +51,7 @@ namespace Tikee.Resources.UI {
         ///   resource lookups using this strongly typed resource class.
         /// </summary>
         [global::System.ComponentModel.EditorBrowsableAttribute(global::System.ComponentModel.EditorBrowsableState.Advanced)]
-        internal static global::System.Globalization.CultureInfo Culture {
+        public static global::System.Globalization.CultureInfo Culture {
             get {
                 return resourceCulture;
             }
@@ -63,7 +63,7 @@ namespace Tikee.Resources.UI {
         /// <summary>
         ///   Looks up a localized string similar to #4b6584.
         /// </summary>
-        internal static string DefaultBackground {
+        public static string DefaultBackground {
             get {
                 return ResourceManager.GetString("DefaultBackground", resourceCulture);
             }
@@ -72,16 +72,25 @@ namespace Tikee.Resources.UI {
         /// <summary>
         ///   Looks up a localized string similar to #3867d6.
         /// </summary>
-        internal static string IdleBackground {
+        public static string IdleBackground {
             get {
                 return ResourceManager.GetString("IdleBackground", resourceCulture);
             }
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to #0fb9b1.
+        /// </summary>
+        public static string PauseOverBackground {
+            get {
+                return ResourceManager.GetString("PauseOverBackground", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to #ff4757.
         /// </summary>
-        internal static string TimeOverBackground {
+        public static string TimeOverBackground {
             get {
                 return ResourceManager.GetString("TimeOverBackground", resourceCulture);
             }
@@ -90,7 +99,7 @@ namespace Tikee.Resources.UI {
         /// <summary>
         ///   Looks up a localized string similar to #26de81.
         /// </summary>
-        internal static string TimerRunningBackground {
+        public static string TimerRunningBackground {
             get {
                 return ResourceManager.GetString("TimerRunningBackground", resourceCulture);
             }

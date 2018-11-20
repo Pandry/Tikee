@@ -58,15 +58,15 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
-    <Compile Include="Resources\Errors\ErrorStrings.Designer.cs">
-      <AutoGen>True</AutoGen>
-      <DesignTime>True</DesignTime>
-      <DependentUpon>ErrorStrings.resx</DependentUpon>
-    </Compile>
     <Compile Include="Resources\Core\DefaultSettingsValues.Designer.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
       <DependentUpon>DefaultSettingsValues.resx</DependentUpon>
+    </Compile>
+    <Compile Include="Resources\Errors\ErrorStrings.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>ErrorStrings.resx</DependentUpon>
     </Compile>
     <Compile Include="Resources\UI\DefaultUIValues.Designer.cs">
       <AutoGen>True</AutoGen>
@@ -113,7 +113,7 @@
       <LastGenOutput>DefaultSettingsValues.Designer.cs</LastGenOutput>
     </EmbeddedResource>
     <EmbeddedResource Include="Resources\UI\DefaultUIValues.resx">
-      <Generator>ResXFileCodeGenerator</Generator>
+      <Generator>PublicResXFileCodeGenerator</Generator>
       <LastGenOutput>DefaultUIValues.Designer.cs</LastGenOutput>
     </EmbeddedResource>
     <None Include="packages.config" />

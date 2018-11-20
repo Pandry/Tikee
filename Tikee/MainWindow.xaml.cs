@@ -41,7 +41,7 @@ namespace Tikee
         StringDictionary mainConfigArray = new StringDictionary();
         StringDictionary defaultConfigArray = new StringDictionary();
 
-        readonly ResourceManager[] configResourcesArray  = { DefaultUIValues.ResourceManager, DefaultSettingsValues.ResourceManager };
+        ResourceManager[] configResourcesArray = { Tikee.Resources.UI.DefaultUIValues.ResourceManager, DefaultSettingsValues.ResourceManager };
 
        
 
@@ -49,8 +49,6 @@ namespace Tikee
         TimeSpan idleDisplayTresholdTimeSpan = TimeSpan.Parse(DefaultSettingsValues.IdleDisplayTresholdString);
 
         int[] backgroundPopup = new int[] {5};
-
-        private bool addictionMode = false;
 
 
         #region Get Cursor Posion func
@@ -98,27 +96,34 @@ namespace Tikee
             {
                 return defaultConfigArray[configKey];
             }
-            throw new ArgumentException("The key does not have a value");
+            return null;
         }
 
         private void readDefaultConfig()
         {
-            foreach (var rm in configResourcesArray)
-                foreach (DictionaryEntry v in rm.GetResourceSet(CultureInfo.InvariantCulture, false, false))
-                    defaultConfigArray[(string)v.Key] = (string)v.Value;
+            foreach (ResourceManager rm in configResourcesArray)
+            {
+                if (rm == null || configResourcesArray == null)
+                {
+                    throw new Exception();
+                }
+                var tstst = rm.GetResourceSet(CultureInfo.InvariantCulture, true, false);
+                foreach (DictionaryEntry v in tstst)
+                    defaultConfigArray[(string) v.Key] = (string) v.Value;
+            }
         }
 
         private void readConfig(string configPath = null, bool defaultFallback = false)
         {
             if (defaultFallback || configPath == null)
-                configPath = getConfigValue("defaultConfigFileLocation");
+                configPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Tikee", getConfigValue("ConfigFileName"));
 
 
             if (defaultFallback)
             {
                 //Load UI values
                 foreach (var rm in configResourcesArray)
-                    foreach (DictionaryEntry v in rm.GetResourceSet(CultureInfo.InvariantCulture, false, false))
+                    foreach (DictionaryEntry v in rm.GetResourceSet(CultureInfo.InvariantCulture, true, false))
                         mainConfigArray[(string)v.Key] = (string)v.Value;
             }
             else if (File.Exists(configPath))
@@ -172,7 +177,7 @@ namespace Tikee
                 {
                     using (var sw = new StreamWriter(configPath))
                     {
-                        sw.Write(DefaultSettingsValues.ConfigFileContent);
+                        sw.Write(getConfigValue("ConfigFileContent"));
                     }
                 }
                 catch (DirectoryNotFoundException)
@@ -273,7 +278,7 @@ namespace Tikee
                     currentTimespan = settedTimespan;
                     HomeWindow.Background = hexToBrush(getConfigValue("timerRunningBackground"));
 
-                    if (addictionMode)
+                    if (getConfigValue("AddictionMode") == "false")
                     {
                         Closing -= OnClosing;
 
@@ -294,14 +299,14 @@ namespace Tikee
                     this.Activate();
                     this.BringIntoView();
                     this.Focus();
-                    if (addictionMode)
+                    if (getConfigValue("AddictionMode") == "false")
                     {
                         setAddictedMode(true);
                         MainBtn.Visibility = Visibility.Hidden;
                     }
                     this.Topmost = false;
                 }
-                if (HomeWindow.Background != hexToBrush(getConfigValue("idleBackground")));
+                if (HomeWindow.Background.Equals(hexToBrush(getConfigValue("idleBackground"))))
                     HomeWindow.Background = hexToBrush(getConfigValue("timeOverBackground"));
             }
         }
@@ -309,8 +314,10 @@ namespace Tikee
         
         public MainWindow()
         {
+            //configResourcesArray = new [] { Tikee.Resources.UI.DefaultUIValues.ResourceManager, DefaultSettingsValues.ResourceManager };
             readDefaultConfig();
-            readConfig(null, true);
+            readConfig();
+            //readConfig(null, true);
 
             InitializeComponent();
             HomeWindow.Background = hexToBrush(getConfigValue("timerRunningBackground"));
