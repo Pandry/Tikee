@@ -123,6 +123,9 @@
   <data name="IdleBackground" xml:space="preserve">
     <value>#3867d6</value>
   </data>
+  <data name="PauseOverBackground" xml:space="preserve">
+    <value>#0fb9b1</value>
+  </data>
   <data name="TimeOverBackground" xml:space="preserve">
     <value>#ff4757</value>
   </data>
