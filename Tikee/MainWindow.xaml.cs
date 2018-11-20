@@ -51,25 +51,43 @@ namespace Tikee
         int[] backgroundPopup = new int[] {5};
 
 
-        #region Get Cursor Posion func
+        #region Get Idle time 
 
         [DllImport("user32.dll")]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        internal static extern bool GetCursorPos(ref Win32Point pt);
+        //https://docs.microsoft.com/en-us/windows/desktop/api/winuser/nf-winuser-getlastinputinfo
+        static extern bool GetLastInputInfo(ref LASTINPUTINFO plii);
 
-        [StructLayout(LayoutKind.Sequential)]
-        internal struct Win32Point
-        {
-            public Int32 X;
-            public Int32 Y;
-        };
+        //https://docs.microsoft.com/en-us/windows/desktop/api/winuser/ns-winuser-taglastinputinfo
+        /*
+         typedef struct tagLASTINPUTINFO {
+              UINT  cbSize;
+              DWORD dwTime;
+            } LASTINPUTINFO, *PLASTINPUTINFO;
+         */
 
-        public static Point GetMousePosition()
+        internal struct LASTINPUTINFO
         {
-            Win32Point w32Mouse = new Win32Point();
-            GetCursorPos(ref w32Mouse);
-            return new Point(w32Mouse.X, w32Mouse.Y);
+            public uint cbSize;//this structure size
+            public long dwTime; //tick count  when last event was received
         }
+
+        static TimeSpan getLastInputTime()
+        {
+            long idleTime = 0;
+            LASTINPUTINFO lastInputInfo = new LASTINPUTINFO();
+            lastInputInfo.cbSize = (uint)Marshal.SizeOf(lastInputInfo);
+            lastInputInfo.dwTime = 0;
+            long envTicks = Environment.TickCount;
+            if (GetLastInputInfo(ref lastInputInfo))
+            {
+                long lastInputTick = lastInputInfo.dwTime;
+                idleTime = envTicks - lastInputTick;
+            }
+            return new TimeSpan(((idleTime > 0) ? (idleTime / 1000) : 0));
+        }
+
+
+
 
         #endregion
 
