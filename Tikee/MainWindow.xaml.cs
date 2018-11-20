@@ -37,7 +37,7 @@ namespace Tikee
 
         const string defaultTimeString = "01:00:00";
         const string defaultPauseString = "00:15:00";
-        const string idleDisplayTresholdString = "00:00:10";
+        const string idleDisplayTresholdString = "00:00:40";
 
         TimeSpan defaultPauseTimeSpan = TimeSpan.Parse(defaultPauseString);
         TimeSpan idleDisplayTresholdTimeSpan = TimeSpan.Parse(idleDisplayTresholdString);
