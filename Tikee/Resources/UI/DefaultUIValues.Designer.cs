@@ -79,15 +79,6 @@ namespace Tikee.Resources.UI {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to #0fb9b1.
-        /// </summary>
-        internal static string PauseOverBackground {
-            get {
-                return ResourceManager.GetString("PauseOverBackground", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   Looks up a localized string similar to #ff4757.
         /// </summary>
         internal static string TimeOverBackground {
