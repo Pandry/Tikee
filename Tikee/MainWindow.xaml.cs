@@ -251,6 +251,7 @@ namespace Tikee
                 }
                 else
                 {
+                    //The require pause time is passed, changing background color
                     HomeWindow.Background = hexToBrush(getConfigValue("PauseOverBackground"));
                     //ClockTxt.Text = currentMouseIdleTime.ToString(@"hh\:mm\:ss");
                     ClockTxt.Text = (defaultPauseTimeSpan - currentMouseIdleTime).ToString(@"hh\:mm\:ss");
@@ -278,7 +279,7 @@ namespace Tikee
                     currentTimespan = settedTimespan;
                     HomeWindow.Background = hexToBrush(getConfigValue("timerRunningBackground"));
 
-                    if (getConfigValue("AddictionMode") == "false")
+                    if (getConfigValue("AddictionMode") != "false")
                     {
                         Closing -= OnClosing;
 
@@ -292,6 +293,7 @@ namespace Tikee
             }
             if (!isIdle && currentTimespan.TotalSeconds <= 0)
             {
+                HomeWindow.Background = hexToBrush(getConfigValue("timeOverBackground"));
                 if (currentTimespan.TotalSeconds == 0 ||
                     backgroundPopup.Any(x => currentTimespan.TotalSeconds % x == 0))
                 {
@@ -299,15 +301,13 @@ namespace Tikee
                     this.Activate();
                     this.BringIntoView();
                     this.Focus();
-                    if (getConfigValue("AddictionMode") == "false")
+                    if (getConfigValue("AddictionMode") != "false")
                     {
                         setAddictedMode(true);
                         MainBtn.Visibility = Visibility.Hidden;
                     }
                     this.Topmost = false;
                 }
-                if (HomeWindow.Background.Equals(hexToBrush(getConfigValue("idleBackground"))))
-                    HomeWindow.Background = hexToBrush(getConfigValue("timeOverBackground"));
             }
         }
 
