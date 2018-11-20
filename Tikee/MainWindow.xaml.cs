@@ -136,7 +136,8 @@ namespace Tikee
                     this.Focus();
                     this.Topmost = false;
                 }
-                HomeWindow.Background = RedBackground;
+                if (HomeWindow.Background != BlueBackground)
+                    HomeWindow.Background = RedBackground;
             }
         }
 
