@@ -39,8 +39,10 @@ namespace Tikee
     public partial class MainWindow : Window
     {
         StringDictionary mainConfigArray = new StringDictionary();
-        private string[] configUIKeyStrings = new[] { "TimerRunningBackground", "TimeOverBackground", "IdleBackground", "DefaultBackground" };
-        private string[] configCoreKeyStrings = new[] { "IdleDisplayTresholdString", "DefaultTimeString", "DefaultPauseString", "ConfigFileName", "ConfigFileContent" };
+        StringDictionary defaultConfigArray = new StringDictionary();
+
+        readonly ResourceManager[] configResourcesArray  = { DefaultUIValues.ResourceManager, DefaultSettingsValues.ResourceManager };
+
 
 
         //Colors from https://flatuicolors.com/palette/de
@@ -96,7 +98,26 @@ namespace Tikee
 
         private TimeSpan currentMouseIdleTime = new TimeSpan(0, 0, 0);
         private bool isIdle = false;
+        #region Configuration reading/settting/getting
+        public string getConfigValue(string configKey)
+        {
+            if (mainConfigArray[configKey] != null)
+            {
+                return mainConfigArray[configKey];
+            }
+            if (defaultConfigArray[configKey] != null)
+            {
+                return defaultConfigArray[configKey];
+            }
+            throw new ArgumentException("The key does not have a value");
+        }
 
+        private void readDefaultConfig()
+        {
+            foreach (var rm in configResourcesArray)
+            foreach (DictionaryEntry v in rm.GetResourceSet(CultureInfo.InvariantCulture, false, false))
+                defaultConfigArray[(string)v.Key] = rm.GetString((string)v.Value);
+        }
 
         private void readConfig(string configPath = null, bool defaultFallback = false)
         {
@@ -107,11 +128,9 @@ namespace Tikee
             if (defaultFallback)
             {
                 //Load UI values
-                var rms = new [] {DefaultUIValues.ResourceManager, DefaultSettingsValues.ResourceManager};
-                foreach (var rm in rms)
+                foreach (var rm in configResourcesArray)
                     foreach (DictionaryEntry v in rm.GetResourceSet(CultureInfo.InvariantCulture, false, false))
                         mainConfigArray[(string)v.Key] = rm.GetString((string)v.Value);
-
             }
             else if (File.Exists(configPath))
             {
@@ -177,6 +196,7 @@ namespace Tikee
                 }
                 catch (UnauthorizedAccessException)
                 {
+                    readConfig(null, true);
                     return;
                 }
                 catch (System.Security.SecurityException)
@@ -194,6 +214,8 @@ namespace Tikee
                 readConfig(configPath);
             }
         }
+
+#endregion
 
         //TODO use windows native API to see idle time and/or last input
         //https://docs.microsoft.com/en-us/windows/desktop/api/winuser/nf-winuser-getlastinputinfo
@@ -222,7 +244,8 @@ namespace Tikee
                     this.Topmost = false;
                 }
                 HomeWindow.Background = idleBackground;
-                ClockTxt.Text = currentMouseIdleTime.ToString(@"hh\:mm\:ss");
+                //ClockTxt.Text = currentMouseIdleTime.ToString(@"hh\:mm\:ss");
+                ClockTxt.Text = (defaultPauseTimeSpan - currentMouseIdleTime).ToString(@"hh\:mm\:ss");
             }
             else
             {
@@ -279,9 +302,7 @@ namespace Tikee
             }
         }
 
-
-
-
+        
         public MainWindow()
         {
 
@@ -294,6 +315,7 @@ namespace Tikee
 
             ClockTxt.Text = defaultTimeString;
 
+            readDefaultConfig();
             readConfig(null, true);
         }
         
@@ -372,11 +394,7 @@ namespace Tikee
 
         private void MainWindow_OnLoaded(object sender, RoutedEventArgs e)
         {
-            this.Topmost = true;
-            this.Activate();
-            this.BringIntoView();
-            this.Focus();
-            this.Topmost = false;
+
         }
 
         private void OnMinimizeBtnClick(object sender, RoutedEventArgs e)
