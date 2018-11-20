@@ -67,23 +67,27 @@ namespace Tikee
 
         internal struct LASTINPUTINFO
         {
-            public uint cbSize;//this structure size
-            public long dwTime; //tick count  when last event was received
+            public uint cbSize;  //this structure size
+            public ulong dwTime; //tick count  when last event was received
+                                 // it is actually a ulong: https://docs.microsoft.com/en-us/windows/desktop/winprog/windows-data-types
+                                 // DWORD 	A 32-bit unsigned integer. The range is 0 through 4294967295 decimal. 
+                                 //This type is declared in IntSafe.h as follows:
+                                 //typedef unsigned long DWORD;
         }
 
-        static TimeSpan getLastInputTime()
+        static TimeSpan GetIdleTimeSpan()
         {
-            long idleTime = 0;
+            ulong idleTime = 0;
             LASTINPUTINFO lastInputInfo = new LASTINPUTINFO();
             lastInputInfo.cbSize = (uint)Marshal.SizeOf(lastInputInfo);
             lastInputInfo.dwTime = 0;
-            long envTicks = Environment.TickCount;
+            ulong envTicks = (ulong)Environment.TickCount;
             if (GetLastInputInfo(ref lastInputInfo))
             {
-                long lastInputTick = lastInputInfo.dwTime;
+                ulong lastInputTick = lastInputInfo.dwTime;
                 idleTime = envTicks - lastInputTick;
             }
-            return new TimeSpan(((idleTime > 0) ? (idleTime / 1000) : 0));
+            return new TimeSpan((long)((idleTime > 0) ? (idleTime / 1000) : 0));
         }
 
 
