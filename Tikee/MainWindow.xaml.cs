@@ -22,6 +22,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Runtime.InteropServices;
 using System.IO;
+using System.Linq.Expressions;
 using System.Resources;
 using IniParser;
 using IniParser.Model;
@@ -41,15 +42,10 @@ namespace Tikee
         StringDictionary mainConfigArray = new StringDictionary();
         StringDictionary defaultConfigArray = new StringDictionary();
 
-        ResourceManager[] configResourcesArray = { Tikee.Resources.UI.DefaultUIValues.ResourceManager, DefaultSettingsValues.ResourceManager };
+        ResourceManager[] configResourcesArray =
+            {Tikee.Resources.UI.DefaultUIValues.ResourceManager, DefaultSettingsValues.ResourceManager};
 
-       
-
-        TimeSpan defaultPauseTimeSpan = TimeSpan.Parse(DefaultSettingsValues.DefaultPauseString);
-        TimeSpan idleDisplayTresholdTimeSpan = TimeSpan.Parse(DefaultSettingsValues.IdleDisplayTresholdString);
-
-        int[] backgroundPopup = new int[] {5};
-
+        private bool PauseIsOver = false;
 
         #region Get Idle time 
 
@@ -65,29 +61,33 @@ namespace Tikee
             } LASTINPUTINFO, *PLASTINPUTINFO;
          */
 
+        [StructLayout(LayoutKind.Sequential)]
         internal struct LASTINPUTINFO
         {
-            public uint cbSize;  //this structure size
-            public ulong dwTime; //tick count  when last event was received
-                                 // it is actually a ulong: https://docs.microsoft.com/en-us/windows/desktop/winprog/windows-data-types
-                                 // DWORD 	A 32-bit unsigned integer. The range is 0 through 4294967295 decimal. 
-                                 //This type is declared in IntSafe.h as follows:
-                                 //typedef unsigned long DWORD;
+            public UInt32 cbSize; //this structure size
+            
+            public UInt32 dwTime; //tick count  when last event was received
+            // it is actually a ulong: https://docs.microsoft.com/en-us/windows/desktop/winprog/windows-data-types
+            // DWORD 	A 32-bit unsigned integer. The range is 0 through 4294967295 decimal. 
+            //This type is declared in IntSafe.h as follows:
+            //typedef unsigned long DWORD;
         }
 
         static TimeSpan GetIdleTimeSpan()
         {
             ulong idleTime = 0;
             LASTINPUTINFO lastInputInfo = new LASTINPUTINFO();
-            lastInputInfo.cbSize = (uint)Marshal.SizeOf(lastInputInfo);
+            lastInputInfo.cbSize = (uint) Marshal.SizeOf(lastInputInfo);
             lastInputInfo.dwTime = 0;
-            ulong envTicks = (ulong)Environment.TickCount;
+            ulong envTicks = (ulong) Environment.TickCount;
             if (GetLastInputInfo(ref lastInputInfo))
             {
                 ulong lastInputTick = lastInputInfo.dwTime;
                 idleTime = envTicks - lastInputTick;
+
             }
-            return new TimeSpan((long)((idleTime > 0) ? (idleTime / 1000) : 0));
+            // For some freacking funny funky reason, when passing the ticks to the timespan, they needs to be multiplied by TimeSpan.TicksPerMillisecond
+            return new TimeSpan((long)idleTime * TimeSpan.TicksPerMillisecond);
         }
 
 
@@ -100,12 +100,33 @@ namespace Tikee
         //Main timer Init
         System.Windows.Threading.DispatcherTimer mainTimer = new System.Windows.Threading.DispatcherTimer();
 
-        private TimeSpan currentTimespan;
-        private TimeSpan settedTimespan;
+        private TimeSpan timerCounterTimespan;
+        private TimeSpan settedTimespan;//Latest settet timespan
 
-        private TimeSpan currentMouseIdleTime = new TimeSpan(0, 0, 0);
-        private bool isIdle = false;
-        #region Configuration reading/settting/getting
+        //private TimeSpan currentMouseIdleTime = new TimeSpan(0, 0, 0);
+        //private bool isIdle = false;
+
+        #region Configuration reading/settting/getting/helpers
+
+        public List<int> textToArray(string text, Func<int, bool> lmbFunc = null)
+        {
+            lmbFunc = lmbFunc != null? lmbFunc : (_ =>true );
+            var splits = text.Split(',');
+            var res = new List<int>();
+            foreach (var number in splits)
+            {
+                int x;
+                if (int.TryParse(number, out x))
+                {
+                    if (lmbFunc(x))
+                    {
+                        res.Add(x);
+                    }
+                }
+            }
+            return res;
+        }
+        
         public string getConfigValue(string configKey)
 
         {
@@ -151,7 +172,7 @@ namespace Tikee
             else if (File.Exists(configPath))
             {
                 IniData data = new FileIniDataParser().ReadFile(configPath);
-                var enums = new[] {data["UI"].GetEnumerator(), data["Tresholds"].GetEnumerator()};
+                var enums = new[] {data["UI"].GetEnumerator(), data["Tresholds"].GetEnumerator(), data["Settings"].GetEnumerator() };
                 foreach (var en in enums)
                     do
                     {
@@ -238,99 +259,87 @@ namespace Tikee
             var c = (Color) ColorConverter.ConvertFromString(color);
             return new SolidColorBrush(c);
         }
-
-        //TODO use windows native API to see idle time and/or last input
-        //https://docs.microsoft.com/en-us/windows/desktop/api/winuser/nf-winuser-getlastinputinfo
-        //
+        
 
         private void mainTimer_Tick(object sender, EventArgs e)
         {
-            currentTimespan -= new TimeSpan(0, 0, 1);
-            //Determine if is idle
-            if (currentMouseIdleTime > defaultPauseTimeSpan)
+            //Decrement the timespan that acts like a coutdown
+            timerCounterTimespan -= new TimeSpan(0, 0, 1);
+
+            // Let's get the idle time
+            var currentIdleTime = GetIdleTimeSpan();
+
+            //If there's no longer time
+            if (!(PauseIsOver && !(currentIdleTime > TimeSpan.Parse(getConfigValue("DefaultPauseString")))) &&  timerCounterTimespan <= new TimeSpan(0L) )
             {
-                //It seems like that's a pause
-                isIdle = true;
-                HomeWindow.Background = hexToBrush(getConfigValue("idleBackground"));
-            }
-            if (isIdle || currentMouseIdleTime > idleDisplayTresholdTimeSpan)
-            {
-                //If there's a pause (mouse don't move from a bit (NOT PAUSE))
-                if (isIdle)
+                // The time is over
+                // Need to bring the window into view
+                //  But that just if it's a thing to do
+                bool timeToSnooze = textToArray(getConfigValue("BackgroundPopupIntervals"), (x => x >= 0))
+                    .Any(x => timerCounterTimespan.TotalSeconds % x == 0);
+                //If it's time to snooze, pop in
+                if (timeToSnooze && !PauseIsOver)
                 {
-                    //If is idle 
                     this.Topmost = true;
                     this.Activate();
                     this.BringIntoView();
                     this.Focus();
-                    this.Topmost = false;
+                    //If it's in addiction mode, enter in addicted mode and do not let the popup resize, otherwise, do the opposite
+                    if (getConfigValue("BackgroundPopupIntervals") == "false")
+                        this.Topmost = false;
                 }
-                if (defaultPauseTimeSpan >= currentMouseIdleTime)
+                // Now it's time to set the background color
+                // Now, let's see if we should set the background to the pause state state:
+
+                //Was the user in pause and the pause is over?
+                if (currentIdleTime > TimeSpan.Parse(getConfigValue("DefaultPauseString")))
                 {
-                    HomeWindow.Background = hexToBrush(getConfigValue("idleBackground"));
-                    //ClockTxt.Text = currentMouseIdleTime.ToString(@"hh\:mm\:ss");
-                    ClockTxt.Text = (defaultPauseTimeSpan - currentMouseIdleTime).ToString(@"hh\:mm\:ss");
+                    // Ok, the user is in a pause state, but the pause period is over
+                    PauseIsOver = true;
+                    // We can change again the color
+                    HomeWindow.Background = hexToBrush(getConfigValue("PauseOverBackground"));
+                    //And exit of a possible addicted mode
+                    setAddictedMode(false);
+                    //And set the current labed to the time passed from the end of the idle time
+                    ClockTxt.Text = (TimeSpan.Parse(getConfigValue("DefaultPauseString")) - currentIdleTime).ToString(@"hh\:mm\:ss");
+
+                }
+                //Is the user in idle at least
+                else if (currentIdleTime > TimeSpan.Parse(getConfigValue("IdleDisplayTresholdString")))
+                {
+                    //Well, the computer is idle
+                    HomeWindow.Background = hexToBrush(getConfigValue("IdleBackground"));
+                    if (getConfigValue("BackgroundPopupIntervals") != "false")
+                        setAddictedMode(true);
+                    //And set the current labed to the idle time
+                    ClockTxt.Text = (TimeSpan.Parse(getConfigValue("DefaultPauseString")) - currentIdleTime).ToString(@"hh\:mm\:ss");
                 }
                 else
                 {
-                    //The require pause time is passed, changing background color
-                    HomeWindow.Background = hexToBrush(getConfigValue("PauseOverBackground"));
-                    //ClockTxt.Text = currentMouseIdleTime.ToString(@"hh\:mm\:ss");
-                    ClockTxt.Text = (defaultPauseTimeSpan - currentMouseIdleTime).ToString(@"hh\:mm\:ss");
-                }
-            }
-            else
-            {
-                //The timer is running normally
-                HomeWindow.Background = hexToBrush(getConfigValue("timerRunningBackground"));
-                ClockTxt.Text = currentTimespan.ToString(@"hh\:mm\:ss");
-            }
-            var newMousePosition = GetMousePosition();
-            if (latestMousePosition == newMousePosition)
-            {
-                currentMouseIdleTime += new TimeSpan(0, 0, 1);
-            }
-            else
-            {
-                latestMousePosition = newMousePosition;
-                currentMouseIdleTime = new TimeSpan(0, 0, 0);
-                if (isIdle)
-                {
-                    //user is back, was in idle
-                    //Restart timer
-                    currentTimespan = settedTimespan;
-                    HomeWindow.Background = hexToBrush(getConfigValue("timerRunningBackground"));
-
-                    if (getConfigValue("AddictionMode") != "false")
-                    {
-                        Closing -= OnClosing;
-
-                        CloseBtn.Visibility = Visibility.Visible;
-                        MinimizeBtn.Visibility = Visibility.Visible;
-                        MainBtn.Visibility = Visibility.Visible;
-                        this.WindowState = WindowState.Normal;
-                    }
-                }
-                isIdle = false;
-            }
-            if (!isIdle && currentTimespan.TotalSeconds <= 0)
-            {
-                HomeWindow.Background = hexToBrush(getConfigValue("timeOverBackground"));
-                if (currentTimespan.TotalSeconds == 0 ||
-                    backgroundPopup.Any(x => currentTimespan.TotalSeconds % x == 0))
-                {
-                    this.Topmost = true;
-                    this.Activate();
-                    this.BringIntoView();
-                    this.Focus();
-                    if (getConfigValue("AddictionMode") != "false")
-                    {
+                    // The time is over, but the computer is not in a idle state :c 
+                    HomeWindow.Background = hexToBrush(getConfigValue("timeOverBackground"));
+                    if (getConfigValue("BackgroundPopupIntervals") != "false")
                         setAddictedMode(true);
-                        MainBtn.Visibility = Visibility.Hidden;
-                    }
-                    this.Topmost = false;
+                    //And set the current labed to the passed time
+                    ClockTxt.Text = (timerCounterTimespan).ToString(@"hh\:mm\:ss");
                 }
             }
+            else
+            {
+                if (PauseIsOver)
+                {
+                    PauseIsOver = false;
+                    this.Topmost = false;
+                    //reset timer 
+                    timerCounterTimespan = settedTimespan;
+                }
+
+
+                //Well, time is passing by normally,TimerRunningBackground
+                HomeWindow.Background = hexToBrush(getConfigValue("TimerRunningBackground"));
+                ClockTxt.Text = (timerCounterTimespan).ToString(@"hh\:mm\:ss");
+            }
+            
         }
 
         
@@ -346,7 +355,7 @@ namespace Tikee
             MainBtn.Content = "START";
             mainTimer.Tick += new EventHandler(mainTimer_Tick);
             HomeWindow.Background = hexToBrush(getConfigValue("defaultBackground"));
-            latestMousePosition = GetMousePosition();
+            //latestMousePosition = GetMousePosition();
 
             ClockTxt.Text = getConfigValue("defaultTimeString");
 
@@ -364,11 +373,13 @@ namespace Tikee
         private void OnCloseBtnClick(object sender, RoutedEventArgs e)
         {
             this.Close();
+            setAddictedMode(false);
+            this.Close();
         }
 
         private void OnMainBtnClick(object sender, RoutedEventArgs e)
         {
-            latestMousePosition = GetMousePosition();
+            //latestMousePosition = GetMousePosition();
             if (mainTimer.IsEnabled)
             {
                 setAddictedMode(false);
@@ -381,6 +392,7 @@ namespace Tikee
             }
             else
             {
+                PauseIsOver = false;
                 TimeSpan ts;
                 try
                 {
@@ -415,7 +427,7 @@ namespace Tikee
                 mainTimer.Interval = new TimeSpan(0, 0, 1);
 
                 settedTimespan = ts;
-                currentTimespan = ts;
+                timerCounterTimespan = ts;
                 mainTimer.Start();
 
 
@@ -528,8 +540,8 @@ namespace Tikee
         }
         #endregion
 
-
-        private void OnClosing(object sender,CancelEventArgs args)
+        //TODO if PC shutdown, permit 
+        private void AbortClosing(object sender,CancelEventArgs args)
         {
             args.Cancel = true;
         }
@@ -538,21 +550,21 @@ namespace Tikee
         {
             if (enable)
             {
-                Closing += OnClosing;
+                Closing += AbortClosing;
 
                 CloseBtn.Visibility = Visibility.Hidden;
                 MinimizeBtn.Visibility = Visibility.Hidden;
                 this.WindowState = WindowState.Maximized;
-                //setTaskManager(false);
+                MainBtn.Visibility = Visibility.Hidden;
             }
             else
             {
-                Closing -= OnClosing;
+                Closing -= AbortClosing;
                 
                 CloseBtn.Visibility = Visibility.Visible;
                 MinimizeBtn.Visibility = Visibility.Visible;
                 this.WindowState = WindowState.Normal;
-                //setTaskManager(true);
+                MainBtn.Visibility = Visibility.Visible;
             }
         }
 
